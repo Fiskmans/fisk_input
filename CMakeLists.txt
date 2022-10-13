@@ -5,7 +5,10 @@ set(CXX_STANDARD, 20)
 
 list(APPEND FISK_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
 
+#externals
+add_subdirectory(fisk_tools)
+
+#local
 add_subdirectory(common)
 add_subdirectory(input)
 add_subdirectory(cpp_output)
-

@@ -1,0 +1,3 @@
+[submodule "fisk_tools"]
+	path = fisk_tools
+	url = https://github.com/Fiskmans/fisk_tools.git
