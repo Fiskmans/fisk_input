@@ -6,6 +6,6 @@ add_library(fisk_input_common ${files})
 
 set_property(TARGET fisk_input_common PROPERTY CXX_STANDARD 20)
 
-target_include_directories(fisk_input_common PUBLIC ${FISK_INCLUDE_DIRS})
+target_include_directories(fisk_input_common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
-add_dependencies(fisk_input_common fisk_tools)
+target_link_libraries(fisk_input_common fisk_tools)
