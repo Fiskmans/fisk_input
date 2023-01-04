@@ -1,5 +1,4 @@
 
-list(APPEND files "InputEvent.cpp" "InputEvent.h")
 list(APPEND files "Types.h")
 
 add_library(fisk_input_common ${files})
