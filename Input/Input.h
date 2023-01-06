@@ -19,27 +19,33 @@ namespace fisk::input
 	class Input
 	{
 	public:
-		static std::string DefaultConfigPath();
+		static constexpr const char* LocalConfigFile = "input_mapping.json";
+		static constexpr int CurrentVersion = 1;
 
-		Input(std::string aConfigPath = DefaultConfigPath(), fisk::tools::Port aPort = DefaultPort);
+		struct DeviceInfo
+		{
+			std::string myName;
+			std::vector<std::string> myChannels;
+		};
+
+		Input(fisk::tools::Port aPort = DefaultPort);
 
 		bool Update();
 		fisk::tools::Port GetPort() const;
 
-		void RegisterAction(DigitalAction* aAction, std::string aName);
-		void RegisterAction(AnalogueAction* aAction, std::string aName);
+		void RegisterAction(Action* aAction, std::string aName);
 
 		void SaveConfig();
 
-		fisk::tools::Event<std::string, std::vector<std::string>> OnNewInputDevice;
+		fisk::tools::Event<DeviceInfo> OnNewInputDevice;
 		fisk::tools::Event<std::string> OnInputDeviceDisconnected;
 
 		std::vector<std::shared_ptr<InputDevice>>& GetDevices();
 
 	private:
+		void LoadConfig(std::string aFilePath);
 		void OnNewSocket(std::shared_ptr<fisk::tools::TCPSocket> aSocket);
-
-		std::string myConfigFilePath;
+		void OnDeviceSetUp(DeviceInfo aDeviceInfo);
 
 		std::unordered_map<std::string, Action*> myActions;
 		std::unordered_map<std::string, std::vector<std::string>> myLoadedPreferences;
@@ -48,6 +54,8 @@ namespace fisk::input
 
 		fisk::tools::TCPListenSocket myListenSocket;
 		fisk::tools::EventReg myNewSocketEventRegistration;
+		
+		std::string myParentFile = "%appdata%/fisk/input/main_config.json";
 	};
 
 	class InputDevice
@@ -63,7 +71,7 @@ namespace fisk::input
 			std::string myName;
 		};
 
-		fisk::tools::SingleFireEvent<std::string, std::vector<std::string>> OnSetUp;
+		fisk::tools::SingleFireEvent<Input::DeviceInfo> OnSetUp;
 
 		std::vector<Channel>& GetChannels();
 		const std::string& GetName();
@@ -85,9 +93,10 @@ namespace fisk::input
 	{
 	public:
 		virtual ~Action() = default;
-		virtual void AttachTo(InputDevice::Channel& aChannel) = 0;
+		virtual void BindTo(InputDevice::Channel& aChannel, std::string aName) = 0;
 
 		std::vector<std::string> myWantedChannels;
+		std::string myBoundTo;
 	};
 
 

@@ -1,12 +1,19 @@
 #include "Input.h"
 
+#include "tools/File.h"
+#include "tools/Json.h"
+#include "tools/Logger.h"
+
+#include <filesystem>
+
 namespace fisk::input
 {
-	Input::Input(std::string aConfigPath, fisk::tools::Port aPort)
-		: myConfigFilePath(aConfigPath)
-		, myListenSocket(aPort)
+	Input::Input(fisk::tools::Port aPort)
+		: myListenSocket(aPort)
 	{
 		myNewSocketEventRegistration = myListenSocket.OnNewConnection.Register(std::bind(&Input::OnNewSocket, this, std::placeholders::_1));
+
+		LoadConfig(LocalConfigFile);
 	}
 
 	bool Input::Update()
@@ -31,9 +38,31 @@ namespace fisk::input
 		return myListenSocket.GetPort();
 	}
 
+	void Input::RegisterAction(Action* aAction, std::string aName)
+	{
+		decltype(myLoadedPreferences)::iterator it = myLoadedPreferences.find(aName);
+		if (it != myLoadedPreferences.end())
+			aAction->myWantedChannels = it->second;
+
+		myActions[aName] = aAction;
+	}
+
 	void Input::SaveConfig()
 	{
+		fisk::tools::Json root;
 
+		root.AddValue("extends", myParentFile);
+		root.AddValue("version", CurrentVersion);
+
+		fisk::tools::Json& actions = root.AddChild("actions");
+
+		for (const auto& [key, value] : myActions)
+		{
+			fisk::tools::Json& action = actions.AddChild(key);
+
+			for (std::string& channel : value->myWantedChannels)
+				action.PushValue(channel);
+		}
 	}
 
 	std::vector<std::shared_ptr<InputDevice>>& Input::GetDevices()
@@ -41,16 +70,83 @@ namespace fisk::input
 		return myDevices;
 	}
 
+	void Input::LoadConfig(std::string aFilePath)
+	{
+		LOG_SYS_INFO("Loading input mapping config", aFilePath);
+
+		if (!std::filesystem::exists(aFilePath))
+		{
+			LOG_SYS_WARNING("Input mapping file missing", aFilePath);
+			return;
+		}
+
+		std::string fileContent = fisk::tools::ReadWholeFile(aFilePath);
+
+		if (fileContent.empty())
+		{
+			LOG_SYS_WARNING("Input mapping file empty", aFilePath);
+			return;
+		}
+
+		fisk::tools::Json root;
+		if (!root.Parse(fileContent.c_str()))
+		{
+			LOG_SYS_WARNING("Input mapping file not valid json", aFilePath);
+			return;
+		}
+
+		std::string parent;
+		if (root["extends"].GetIf(parent))
+			LoadConfig(parent);
+
+		int version;
+		if (!root["version"].GetIf(version))
+		{
+			LOG_SYS_WARNING("Input mapping file missing version number", aFilePath);
+			return;
+		}
+
+		if (version != CurrentVersion)
+		{
+			LOG_SYS_WARNING("Input mapping file missing wrong version", "file: " + aFilePath, "Was: " + std::to_string(version) + " expected: " + std::to_string(CurrentVersion));
+			return;
+		}
+
+		for (const auto& [key, value] : root["actions"].IterateObject())
+		{
+			std::vector<std::string> channels;
+			for (fisk::tools::Json& channel : value.IterateArray())
+			{
+				std::string c;
+				if (!channel.GetIf(c))
+				{
+					LOG_SYS_WARNING("Input mapping file not valid", "File: " + aFilePath, "Action [" + key + "] contained non-string value");
+					return;
+				}
+				channels.push_back(c);
+			}
+
+			myLoadedPreferences[key] = channels;
+		}
+	}
+
 	void Input::OnNewSocket(std::shared_ptr<fisk::tools::TCPSocket> aSocket)
 	{
 		std::shared_ptr<InputDevice> device = std::make_shared<InputDevice>(aSocket);
-		device->OnSetUp.Register([this](std::string aName, std::vector<std::string> aChannels)
-		{
-			OnNewInputDevice.Fire(aName, aChannels);
-		});
+		device->OnSetUp.Register(std::bind(&Input::OnDeviceSetUp, this, std::placeholders::_1));
 
 		myDevices.push_back(device);
+	}
 
+	void Input::OnDeviceSetUp(DeviceInfo aDeviceInfo)
+	{
+		for (const auto& [key, action] : myActions)
+		{
+			for (std::string& wantedChannel : action->myWantedChannels)
+			{
+
+			}
+		}
 	}
 
 	InputDevice::InputDevice(std::shared_ptr<fisk::tools::TCPSocket> aSocket)
