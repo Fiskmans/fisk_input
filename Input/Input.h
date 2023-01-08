@@ -33,11 +33,11 @@ namespace fisk::input
 		bool Update();
 		fisk::tools::Port GetPort() const;
 
-		void RegisterAction(Action* aAction, std::string aName);
+		void RegisterAction(Action& aAction, std::string aName);
 
 		void SaveConfig();
 
-		fisk::tools::Event<DeviceInfo> OnNewInputDevice;
+		fisk::tools::Event<InputDevice&> OnNewInputDevice;
 		fisk::tools::Event<std::string> OnInputDeviceDisconnected;
 
 		std::vector<std::shared_ptr<InputDevice>>& GetDevices();
@@ -45,7 +45,7 @@ namespace fisk::input
 	private:
 		void LoadConfig(std::string aFilePath);
 		void OnNewSocket(std::shared_ptr<fisk::tools::TCPSocket> aSocket);
-		void OnDeviceSetUp(DeviceInfo aDeviceInfo);
+		void OnDeviceSetUp(InputDevice& aDevice);
 
 		std::unordered_map<std::string, Action*> myActions;
 		std::unordered_map<std::string, std::vector<std::string>> myLoadedPreferences;
@@ -54,8 +54,8 @@ namespace fisk::input
 
 		fisk::tools::TCPListenSocket myListenSocket;
 		fisk::tools::EventReg myNewSocketEventRegistration;
-		
-		std::string myParentFile = "%appdata%/fisk/input/main_config.json";
+
+		std::string myParentFile = "%appdata%fisk/input/main_config.json";
 	};
 
 	class InputDevice
@@ -71,9 +71,9 @@ namespace fisk::input
 			std::string myName;
 		};
 
-		fisk::tools::SingleFireEvent<Input::DeviceInfo> OnSetUp;
+		fisk::tools::SingleFireEvent<InputDevice&> OnSetUp;
 
-		std::vector<Channel>& GetChannels();
+		std::vector<std::unique_ptr<Channel>>& GetChannels();
 		const std::string& GetName();
 
 	private:
@@ -85,7 +85,7 @@ namespace fisk::input
 		fisk::tools::StreamReader myStreamReader;
 
 		bool myIsSetUp = false;
-		std::vector<Channel> myChannels;
+		std::vector<std::unique_ptr<Channel>> myChannels;
 		std::string myName;
 	};
 
@@ -95,11 +95,32 @@ namespace fisk::input
 		virtual ~Action() = default;
 		virtual void BindTo(InputDevice::Channel& aChannel, std::string aName) = 0;
 
+		void OnDeviceSetUp(InputDevice& aDevice);
+
 		std::vector<std::string> myWantedChannels;
 		std::string myBoundTo;
 	};
 
+	class DigitalAction
+		: public Action
+	{
+	public:
+		fisk::tools::Event<> OnPressed;
+		fisk::tools::Event<> OnReleased;
 
+		bool IsHeld();
+
+	private:
+		static constexpr float PressThreshhold = 0.7;
+		static constexpr float ReleaseThreshhold = 0.3;
+
+		void BindTo(InputDevice::Channel& aChannel, std::string aName) override;
+
+		void OnChange(float aNewValue);
+
+		bool myIsHeld = false;
+		fisk::tools::EventReg myChannelEventReg;
+	};
 
 }
 

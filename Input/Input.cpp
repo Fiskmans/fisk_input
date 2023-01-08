@@ -38,13 +38,13 @@ namespace fisk::input
 		return myListenSocket.GetPort();
 	}
 
-	void Input::RegisterAction(Action* aAction, std::string aName)
+	void Input::RegisterAction(Action& aAction, std::string aName)
 	{
 		decltype(myLoadedPreferences)::iterator it = myLoadedPreferences.find(aName);
 		if (it != myLoadedPreferences.end())
-			aAction->myWantedChannels = it->second;
+			aAction.myWantedChannels = it->second;
 
-		myActions[aName] = aAction;
+		myActions[aName] = &aAction;
 	}
 
 	void Input::SaveConfig()
@@ -138,15 +138,12 @@ namespace fisk::input
 		myDevices.push_back(device);
 	}
 
-	void Input::OnDeviceSetUp(DeviceInfo aDeviceInfo)
+	void Input::OnDeviceSetUp(InputDevice& aDevice)
 	{
 		for (const auto& [key, action] : myActions)
-		{
-			for (std::string& wantedChannel : action->myWantedChannels)
-			{
+			action->OnDeviceSetUp(aDevice);
 
-			}
-		}
+		OnNewInputDevice.Fire(aDevice);
 	}
 
 	InputDevice::InputDevice(std::shared_ptr<fisk::tools::TCPSocket> aSocket)
@@ -164,7 +161,7 @@ namespace fisk::input
 		return true;
 	}
 
-	std::vector<InputDevice::Channel>& InputDevice::GetChannels()
+	std::vector<std::unique_ptr<InputDevice::Channel>>& InputDevice::GetChannels()
 	{
 		return myChannels;
 	}
@@ -196,16 +193,15 @@ namespace fisk::input
 
 			myChannels.resize(channelCount);
 
-			for (Channel& channel : myChannels)
-				if (!myStreamReader.Process(channel.myName))
+			for (std::unique_ptr<Channel>& channel : myChannels)
+				if (!channel)
+					channel = std::make_unique<Channel>();
+
+			for (std::unique_ptr<Channel>& channel : myChannels)
+				if (!myStreamReader.Process(channel->myName))
 					return;
 
-			std::vector<std::string> channelNames;
-			channelNames.reserve(myChannels.size());
-			for (Channel& channel : myChannels)
-				channelNames.push_back(channel.myName);
-
-			OnSetUp.Fire(myName, channelNames);
+			OnSetUp.Fire(*this);
 			myIsSetUp = true;
 			mySocket->GetReadStream().CommitRead();
 		}
@@ -230,7 +226,60 @@ namespace fisk::input
 				return;
 			}
 
-			myChannels[channel].OnChanged.Fire(InputValueToFloat(value));
+			myChannels[channel]->OnChanged.Fire(InputValueToFloat(value));
+		}
+	}
+
+	void Action::OnDeviceSetUp(InputDevice& aDevice)
+	{
+		for (std::string& wanted : myWantedChannels)
+		{
+			if (wanted == myBoundTo)
+				break;
+
+			if (!wanted.starts_with(aDevice.GetName()))
+				continue;
+			
+			for (std::unique_ptr<InputDevice::Channel>& channel : aDevice.GetChannels())
+			{
+				if (wanted.ends_with(channel->myName))
+				{
+					BindTo(*channel, wanted);
+					myBoundTo = wanted;
+					return;
+				}
+			}
+		}
+	}
+
+	bool DigitalAction::IsHeld()
+	{
+		return myIsHeld;
+	}
+
+	void DigitalAction::BindTo(InputDevice::Channel& aChannel, std::string aName)
+	{
+		OnChange(0.f);
+		myChannelEventReg = aChannel.OnChanged.Register(std::bind(&DigitalAction::OnChange, this, std::placeholders::_1));
+	}
+
+	void DigitalAction::OnChange(float aNewValue)
+	{
+		if (myIsHeld)
+		{
+			if (aNewValue < ReleaseThreshhold)
+			{
+				OnReleased.Fire();
+				myIsHeld = false;
+			}
+		}
+		else
+		{
+			if (aNewValue > PressThreshhold)
+			{
+				OnPressed.Fire();
+				myIsHeld = true;
+			}
 		}
 	}
 }
