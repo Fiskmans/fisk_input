@@ -1,4 +1,4 @@
-#include "Input.h"
+#include "input/Input.h"
 
 #include "tools/File.h"
 #include "tools/Json.h"
