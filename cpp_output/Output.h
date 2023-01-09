@@ -1,7 +1,7 @@
 #ifndef FISK_INPUT_OUTPUT_OUTPUT_H
 #define FISK_INPUT_OUTPUT_OUTPUT_H
 
-#include "common/Types.h"
+#include "fisk_input_common/Types.h"
 
 #include "tools/StreamWriter.h"
 #include "tools/TCPSocket.h"

@@ -1,4 +1,4 @@
-#include "input/Input.h"
+#include "fisk_input/Input.h"
 
 #include "tools/File.h"
 #include "tools/Json.h"

@@ -1,7 +1,7 @@
 #ifndef FISK_INPUT_INPUT_INPUT_H
 #define FISK_INPUT_INPUT_INPUT_H
 
-#include "common/Types.h"
+#include "fisk_input_common/Types.h"
 
 #include "tools/Event.h"
 #include "tools/StreamReader.h"

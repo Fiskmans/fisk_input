@@ -1,7 +1,7 @@
 
 #include <catch2/catch_all.hpp>
 
-#include "input/Input.h"
+#include "fisk_input/Input.h"
 
 #include "cpp_output/Output.h"
 

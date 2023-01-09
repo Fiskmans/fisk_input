@@ -9,8 +9,8 @@ set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(fisk_tools)
 
 #local
-add_subdirectory(common)
-add_subdirectory(input)
+add_subdirectory(fisk_input_common)
+add_subdirectory(fisk_input)
 add_subdirectory(cpp_output)
 
 
