@@ -12,6 +12,7 @@ add_subdirectory(fisk_tools)
 add_subdirectory(fisk_input_common)
 add_subdirectory(fisk_input)
 add_subdirectory(cpp_output)
+add_subdirectory(builtin)
 
 
 Include(CTest)
