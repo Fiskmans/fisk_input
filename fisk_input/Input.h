@@ -46,6 +46,7 @@ namespace fisk::input
 		void LoadConfig(std::string aFilePath);
 		void OnNewSocket(std::shared_ptr<fisk::tools::TCPSocket> aSocket);
 		void OnDeviceSetUp(InputDevice& aDevice);
+		void OnDeviceDisconnected(InputDevice& aDevice);
 
 		std::unordered_map<std::string, Action*> myActions;
 		std::unordered_map<std::string, std::vector<std::string>> myLoadedPreferences;
@@ -68,6 +69,7 @@ namespace fisk::input
 		struct Channel
 		{
 			fisk::tools::Event<float> OnChanged;
+			float myCurrentValue;
 			std::string myName;
 		};
 
@@ -96,6 +98,7 @@ namespace fisk::input
 		virtual void BindTo(InputDevice::Channel& aChannel, std::string aName) = 0;
 
 		void OnDeviceSetUp(InputDevice& aDevice);
+		void OnDeviceDisconnected(InputDevice& aDevice);
 
 		std::vector<std::string> myWantedChannels;
 		std::string myBoundTo;

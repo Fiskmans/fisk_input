@@ -25,7 +25,7 @@ namespace fisk::input
 		{
 			if (!myDevices[i]->Update())
 			{
-				OnInputDeviceDisconnected.Fire(myDevices[i]->GetName());
+				OnDeviceDisconnected(*myDevices[i]);
 				myDevices.erase(myDevices.begin() + i);
 			}
 		}
@@ -146,6 +146,14 @@ namespace fisk::input
 		OnNewInputDevice.Fire(aDevice);
 	}
 
+	void Input::OnDeviceDisconnected(InputDevice& aDevice)
+	{
+		for (const auto& [key, action] : myActions)
+			action->OnDeviceDisconnected(aDevice);
+
+		OnInputDeviceDisconnected.Fire(aDevice.GetName());
+	}
+
 	InputDevice::InputDevice(std::shared_ptr<fisk::tools::TCPSocket> aSocket)
 		: mySocket(aSocket)
 		, myStreamReader(mySocket->GetReadStream())
@@ -226,7 +234,9 @@ namespace fisk::input
 				return;
 			}
 
-			myChannels[channel]->OnChanged.Fire(InputValueToFloat(value));
+			float newValue = InputValueToFloat(value);
+			myChannels[channel]->myCurrentValue = newValue;
+			myChannels[channel]->OnChanged.Fire(newValue);
 		}
 	}
 
@@ -250,6 +260,14 @@ namespace fisk::input
 				}
 			}
 		}
+	}
+
+	void Action::OnDeviceDisconnected(InputDevice& aDevice)
+	{
+		if (myBoundTo.empty())
+			return;
+
+		// TODO: unbind from the channel;
 	}
 
 	bool DigitalAction::IsHeld()
