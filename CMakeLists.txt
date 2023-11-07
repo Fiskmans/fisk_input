@@ -5,10 +5,16 @@ project(FISK_INPUT)
 set(CMAKE_CXX_STANDARD 20)
 set(BUILD_SHARED_LIBS OFF)
 
-#externals
-add_subdirectory(fisk_tools)
+Include(FetchContent)
 
-#local
+FetchContent_Declare(
+  fisk_tools
+  GIT_REPOSITORY https://github.com/Fiskmans/fisk_input.git
+  GIT_TAG        master
+)
+
+FetchContent_MakeAvailable(fisk_tools)
+
 add_subdirectory(fisk_input_common)
 add_subdirectory(fisk_input)
 add_subdirectory(cpp_output)
@@ -16,8 +22,7 @@ add_subdirectory(builtin)
 
 
 Include(CTest)
-Include(FetchContent)
-
+	
 if(BUILD_TESTING)
 	FetchContent_Declare(
 	  Catch2
