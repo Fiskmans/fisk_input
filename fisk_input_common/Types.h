@@ -3,6 +3,7 @@
 
 #include "tools/Socket.h"
 
+#include <cmath>
 #include <cstdint>
 #include <limits>
 
