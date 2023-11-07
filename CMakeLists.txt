@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(FISK_INPUT)
+project(fisk_input)
 
 set(CMAKE_CXX_STANDARD 20)
 set(BUILD_SHARED_LIBS OFF)
@@ -9,7 +9,7 @@ Include(FetchContent)
 
 FetchContent_Declare(
   fisk_tools
-  GIT_REPOSITORY https://github.com/Fiskmans/fisk_input.git
+  GIT_REPOSITORY https://github.com/Fiskmans/fisk_tools.git
   GIT_TAG        master
 )
 
