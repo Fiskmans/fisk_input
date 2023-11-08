@@ -80,16 +80,16 @@ namespace fisk::input
 			return;
 		}
 
-		std::string fileContent = fisk::tools::ReadWholeFile(aFilePath);
+		std::optional<std::string> fileContent = fisk::tools::ReadWholeFile(aFilePath);
 
-		if (fileContent.empty())
+		if (!fileContent)
 		{
-			LOG_SYS_WARNING("Input mapping file empty", aFilePath);
+			LOG_SYS_WARNING("Failed to read Input mapping file", aFilePath);
 			return;
 		}
 
 		fisk::tools::Json root;
-		if (!root.Parse(fileContent.c_str()))
+		if (!root.Parse(fileContent->c_str()))
 		{
 			LOG_SYS_WARNING("Input mapping file not valid json", aFilePath);
 			return;
