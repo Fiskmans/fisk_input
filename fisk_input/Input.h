@@ -114,8 +114,8 @@ namespace fisk::input
 		bool IsHeld();
 
 	private:
-		static constexpr float PressThreshhold = 0.7;
-		static constexpr float ReleaseThreshhold = 0.3;
+		static constexpr float PressThreshhold = 0.7f;
+		static constexpr float ReleaseThreshhold = 0.3f;
 
 		void BindTo(InputDevice::Channel& aChannel, std::string aName) override;
 
